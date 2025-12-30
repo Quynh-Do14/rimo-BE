@@ -1,177 +1,306 @@
 const db = require('../config/database')
 
-const getAllProductModels = async ({
+const getAllProducts = async ({
   page = 1,
   limit = 10,
   search = '',
-  series_id,
-  sort_by = 'created_at',
-  sort_order = 'desc'
+  category_id,
+  brand_id,
+  min_price,
+  max_price
 }) => {
   const offset = (page - 1) * limit
   const queryParams = []
-
   let query = `
-    SELECT pm.*, 
-           ps.name as series_name,
-           (SELECT COUNT(*) FROM product_model_figures WHERE model_id = pm.id) as figure_count
-    FROM product_models pm
-    LEFT JOIN product_series ps ON pm.series_id = ps.id
+    SELECT p.*, c.name AS category_name, b.name AS brand_name
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN brands b ON p.brand_id = b.id
   `
+  let countQuery = `SELECT COUNT(*) FROM products p`
+  const conditions = []
 
-  let countQuery = `
-    SELECT COUNT(*)
-    FROM product_models pm
-    LEFT JOIN product_series ps ON pm.series_id = ps.id
-  `
-
-  let conditions = []
-
-  // Tìm kiếm theo model_key
   if (search) {
     queryParams.push(`%${search}%`)
-    conditions.push(`LOWER(pm.model_key) LIKE LOWER($${queryParams.length})`)
+    conditions.push(`LOWER(p.name) LIKE LOWER($${queryParams.length})`)
   }
 
-  // Lọc theo series_id
-  if (series_id) {
-    queryParams.push(series_id)
-    conditions.push(`pm.series_id = $${queryParams.length}`)
+  if (category_id) {
+    queryParams.push(category_id)
+    conditions.push(`p.category_id = $${queryParams.length}`)
   }
 
-  // Gắn điều kiện WHERE nếu có
+  if (brand_id) {
+    queryParams.push(brand_id)
+    conditions.push(`p.brand_id = $${queryParams.length}`)
+  }
+
+  if (min_price) {
+    queryParams.push(min_price)
+    conditions.push(`p.price >= $${queryParams.length}`)
+  }
+
+  if (max_price) {
+    queryParams.push(max_price)
+    conditions.push(`p.price <= $${queryParams.length}`)
+  }
+
   if (conditions.length > 0) {
     const whereClause = ` WHERE ${conditions.join(' AND ')}`
     query += whereClause
     countQuery += whereClause
   }
 
-  // Validate sort_by để tránh SQL injection
-  const allowedSortColumns = ['id', 'model_key', 'created_at', 'updated_at']
-  const safeSortBy = allowedSortColumns.includes(sort_by)
-    ? sort_by
-    : 'created_at'
-  const safeSortOrder = sort_order.toLowerCase() === 'asc' ? 'ASC' : 'DESC'
+  queryParams.push(limit, offset)
+  query += ` ORDER BY p.id DESC LIMIT $${queryParams.length - 1} OFFSET $${
+    queryParams.length
+  }`
 
-  query += ` ORDER BY pm.${safeSortBy} ${safeSortOrder}`
-
-  // Phân trang
-  queryParams.push(limit)
-  queryParams.push(offset)
-  query += ` LIMIT $${queryParams.length - 1} OFFSET $${queryParams.length}`
-
-  // Truy vấn DB
-  const dataResult = await db.query(query, queryParams)
-  const countResult = await db.query(
+  const result = await db.query(query, queryParams)
+  const count = await db.query(
     countQuery,
     queryParams.slice(0, queryParams.length - 2)
   )
-  const total = parseInt(countResult.rows[0].count)
+
+  for (let product of result.rows) {
+    const imgs = await db.query(
+      `SELECT image_url FROM product_images WHERE product_id = $1`,
+      [product.id]
+    )
+    product.images = imgs.rows.map(r => r.image_url)
+  }
 
   return {
-    data: dataResult.rows,
-    total,
+    data: result.rows,
+    total: parseInt(count.rows[0].count),
     page: parseInt(page),
     limit: parseInt(limit),
-    totalPages: Math.ceil(total / limit)
+    totalPages: Math.ceil(count.rows[0].count / limit)
   }
 }
 
-const getProductModelById = async id => {
-  // Lấy model hiện tại với thông tin đầy đủ
-  const modelResult = await db.query(
+const getProductById = async id => {
+  // 1. Truy vấn thông tin sản phẩm chính
+  const productRes = await db.query(
     `
-    SELECT pm.*, 
-           ps.name as series_name,
-           json_agg(
-               json_build_object(
-                   'id', pmf.id,
-                   'key', pmf.fig_key,
-                   'value', pmf.fig_value,
-                   'created_at', pmf.created_at,
-                   'updated_at', pmf.updated_at
-               )
-           ) as figures
-    FROM product_models pm
-    LEFT JOIN product_series ps ON pm.series_id = ps.id
-    LEFT JOIN product_model_figures pmf ON pm.id = pmf.model_id
-    WHERE pm.id = $1
-    GROUP BY pm.id, ps.name
+    SELECT p.*, c.name AS category_name, b.name AS brand_name
+    FROM products p
+    LEFT JOIN categories c ON p.category_id = c.id
+    LEFT JOIN brands b ON p.brand_id = b.id
+    WHERE p.id = $1
     `,
     [id]
   )
 
-  const model = modelResult.rows[0]
-  if (!model) return null
+  const product = productRes.rows[0]
+  if (!product) return null
 
-  return model
-}
-
-const getProductModelsBySeriesId = async (seriesId, { limit = 10 } = {}) => {
-  const result = await db.query(
-    `
-    SELECT pm.*,
-           json_agg(
-               json_build_object(
-                   'id', pmf.id,
-                   'key', pmf.fig_key,
-                   'value', pmf.fig_value
-               )
-           ) as figures
-    FROM product_models pm
-    LEFT JOIN product_model_figures pmf ON pm.id = pmf.model_id
-    WHERE pm.series_id = $1
-    GROUP BY pm.id
-    ORDER BY pm.model_key
-    LIMIT $2
-    `,
-    [seriesId, limit]
+  // 2. Lấy ảnh sản phẩm
+  const imageRes = await db.query(
+    `SELECT image_url FROM product_images WHERE product_id = $1`,
+    [id]
   )
-  return result.rows
+  product.images = imageRes.rows.map(r => r.image_url)
+
+  // 3. Lấy danh sách thông số kỹ thuật (figures)
+  const figureRes = await db.query(
+    `SELECT id, key, value FROM product_figures WHERE product_id = $1`,
+    [id]
+  )
+  product.productFigure = figureRes.rows
+
+  // 4. Lấy các sản phẩm cùng danh mục (trừ chính nó)
+  const sameCategoryRes = await db.query(
+    `
+    SELECT * FROM products
+    WHERE category_id = $1 AND id != $2
+    ORDER BY created_at DESC
+    LIMIT 6
+    `,
+    [product.category_id, id]
+  )
+  product.sameCategoryProducts = sameCategoryRes.rows
+
+  // 5. Lấy các sản phẩm cùng thương hiệu (trừ chính nó)
+  const sameBrandRes = await db.query(
+    `
+    SELECT * FROM products
+    WHERE brand_id = $1 AND id != $2
+    ORDER BY created_at DESC
+    LIMIT 6
+    `,
+    [product.brand_id, id]
+  )
+  product.sameBrandProducts = sameBrandRes.rows
+
+  return product
 }
 
-const checkModelKeyExists = async (model_key, series_id, excludeId = null) => {
-  let query = `
-    SELECT id FROM product_models 
-    WHERE LOWER(model_key) = LOWER($1) AND series_id = $2
-  `
-  const params = [model_key, series_id]
+const createProduct = async (
+  data,
+  imageUrls = [],
+  productFigure = [],
+  image = null
+) => {
+  const {
+    name,
+    description,
+    short_description,
+    more_infomation,
+    price,
+    percent_sale,
+    year,
+    warranty,
+    category_id,
+    brand_id
+  } = data
 
-  if (excludeId) {
-    query += ' AND id != $3'
-    params.push(excludeId)
+  // 1. Insert sản phẩm
+  const result = await db.query(
+    `INSERT INTO products (
+      name, description, short_description, more_infomation,
+      price, percent_sale, year, warranty, category_id, brand_id, image
+    ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+    RETURNING id`,
+    [
+      name,
+      description,
+      short_description,
+      more_infomation,
+      price,
+      percent_sale,
+      year,
+      warranty,
+      category_id,
+      brand_id,
+      image
+    ]
+  )
+
+  const productId = result.rows[0].id
+
+  // 2. Insert ảnh phụ
+  for (const url of imageUrls) {
+    await db.query(
+      `INSERT INTO product_images (product_id, image_url) VALUES ($1, $2)`,
+      [productId, url]
+    )
   }
 
-  const result = await db.query(query, params)
-  return result.rowCount > 0
+  // 3. Insert thông số kỹ thuật
+  for (const figure of productFigure) {
+    await db.query(
+      `INSERT INTO product_figures (product_id, key, value) VALUES ($1, $2, $3)`,
+      [productId, figure.key, figure.value]
+    )
+  }
+
+  return { id: productId }
 }
 
-const createProductModel = async ({ model_key, series_id }) => {
-  const res = await db.query(
-    'INSERT INTO product_models (model_key, series_id) VALUES ($1, $2) RETURNING *',
-    [model_key, series_id]
-  )
-  return res.rows[0]
-}
+const updateProduct = async (
+  id,
+  data,
+  newImageUrls = [],
+  remainingImages = [],
+  productFigure = [],
+  image = null // ảnh chính (thumbnail)
+) => {
+  const {
+    name,
+    description,
+    short_description,
+    more_infomation,
+    price,
+    percent_sale,
+    year,
+    warranty,
+    category_id,
+    brand_id
+  } = data
 
-const updateProductModel = async (id, { model_key, series_id }) => {
-  const result = await db.query(
-    `UPDATE product_models SET model_key = $1, series_id = $2 WHERE id = $3 RETURNING *`,
-    [model_key, series_id, id]
+  let updateQuery = `
+    UPDATE products SET 
+      name=$1, 
+      description=$2, 
+      short_description=$3, 
+      more_infomation=$4, 
+      price=$5, 
+      percent_sale=$6,
+      year=$7, 
+      warranty=$8, 
+      category_id=$9, 
+      brand_id=$10`
+  const params = [
+    name,
+    description,
+    short_description,
+    more_infomation,
+    price,
+    percent_sale,
+    year,
+    warranty,
+    category_id,
+    brand_id
+  ]
+
+  if (image) {
+    updateQuery += `, image=$11`
+    params.push(image)
+    updateQuery += ` WHERE id=$12 RETURNING *`
+    params.push(id)
+  } else {
+    updateQuery += ` WHERE id=$11 RETURNING *`
+    params.push(id)
+  }
+
+  const result = await db.query(updateQuery, params)
+
+  // Cập nhật ảnh phụ
+  const oldImagesRes = await db.query(
+    `SELECT image_url FROM product_images WHERE product_id = $1`,
+    [id]
   )
+  const oldImages = oldImagesRes.rows.map(row => row.image_url)
+
+  const imagesToDelete = oldImages.filter(url => !remainingImages.includes(url))
+  for (const url of imagesToDelete) {
+    await db.query(
+      `DELETE FROM product_images WHERE product_id = $1 AND image_url = $2`,
+      [id, url]
+    )
+  }
+  console.log('oldImages', oldImages)
+  console.log('imagesToDelete', imagesToDelete)
+  console.log('remainingImages', remainingImages)
+
+  for (const url of newImageUrls) {
+    await db.query(
+      `INSERT INTO product_images (product_id, image_url) VALUES ($1, $2)`,
+      [id, url]
+    )
+  }
+
+  // Cập nhật thông số kỹ thuật
+  await db.query(`DELETE FROM product_figures WHERE product_id = $1`, [id])
+  for (const figure of productFigure) {
+    await db.query(
+      `INSERT INTO product_figures (product_id, key, value) VALUES ($1, $2, $3)`,
+      [id, figure.key, figure.value]
+    )
+  }
+
   return result.rows[0]
 }
 
-const deleteProductModel = async id => {
-  await db.query('DELETE FROM product_models WHERE id = $1', [id])
+const deleteProduct = async id => {
+  await db.query(`DELETE FROM products WHERE id = $1`, [id])
 }
 
 module.exports = {
-  getAllProductModels,
-  getProductModelById,
-  getProductModelsBySeriesId,
-  checkModelKeyExists,
-  createProductModel,
-  updateProductModel,
-  deleteProductModel
+  getAllProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct
 }
