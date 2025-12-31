@@ -13,54 +13,11 @@ const userRoutes = require('./src/routers/user.routes')
 const blogRoutes = require('./src/routers/blog.routes')
 const blogCategoryRoutes = require('./src/routers/blog-category.routes')
 const bannerRoutes = require('./src/routers/banner.routes')
-// const data = [
-//   {
-//     name: 'QUANTUM',
-//     fig: [
-//       {
-//         key: 'G30',
-//         value: [
-//           {
-//             key: 'Chất liệu',
-//             value: 'TPU'
-//           }
-//         ]
-//       },
-//       {
-//         key: 'U16',
-//         value: [
-//           {
-//             key: 'Chất liệu',
-//             value: 'TPU'
-//           }
-//         ]
-//       }
-//     ]
-//   },
-//   {
-//     name: 'SPUTECH',
-//     fig: [
-//       {
-//         key: 'G30',
-//         value: [
-//           {
-//             key: 'Chất liệu',
-//             value: 'TPU'
-//           }
-//         ]
-//       },
-//       {
-//         key: 'U16',
-//         value: [
-//           {
-//             key: 'Chất liệu',
-//             value: 'TPU'
-//           }
-//         ]
-//       }
-//     ]
-//   }
-// ]
+const brandRoutes = require('./src/routers/brand.routes')
+const productRoutes = require('./src/routers/product.routes')
+const productSeriesRoutes = require('./src/routers/product-series.routes')
+const seriesRoutes = require('./src/routers/series.routes')
+
 
 const app = express()
 const PORT = process.env.PORT || 3000
@@ -75,6 +32,10 @@ app.use('/api/users', userRoutes)
 app.use('/api/blog', blogRoutes)
 app.use('/api/blog-category', blogCategoryRoutes)
 app.use('/api/banner', bannerRoutes)
+app.use('/api/brand', brandRoutes)
+app.use('/api/product', productRoutes)
+app.use('/api/product-series', productSeriesRoutes)
+app.use('/api/series', seriesRoutes)
 
 app.use('/api/uploads', express.static('src/uploads'))
 // Health check
