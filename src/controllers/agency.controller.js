@@ -1,0 +1,91 @@
+const agencyModel = require('../models/agency.model')
+
+const getAll = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, search = '' } = req.query
+    const result = await agencyModel.getAllAgency({ page, limit, search })
+    res.json(result)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message })
+  }
+}
+
+const getById = async (req, res) => {
+  try {
+    const data = await agencyModel.getAgencyById(req.params.id)
+    if (!data) return res.status(404).json({ message: 'Agency not found' })
+    res.json(data)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message })
+  }
+}
+
+const create = async (req, res) => {
+  try {
+    const { name, address, lat, long, phone_number } = req.body
+    const image = req.file ? `/uploads/${req.file.filename}` : null
+
+    // Validate required fields
+    if (!name || !address || !phone_number) {
+      return res
+        .status(400)
+        .json({ message: 'Name, address and phone number are required' })
+    }
+
+    const newAgency = await agencyModel.createAgency({
+      name,
+      address,
+      lat: lat ? parseFloat(lat) : null,
+      long: long ? parseFloat(long) : null,
+      phone_number,
+      image
+    })
+    res.status(201).json(newAgency)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
+
+const update = async (req, res) => {
+  try {
+    const { name, address, lat, long, phone_number } = req.body
+    const image = req.file
+      ? `/uploads/${req.file.filename}`
+      : req.body.image || undefined
+
+    const updateData = {
+      ...(name !== undefined && { name }),
+      ...(address !== undefined && { address }),
+      ...(lat !== undefined && { lat: parseFloat(lat) }),
+      ...(long !== undefined && { long: parseFloat(long) }),
+      ...(phone_number !== undefined && { phone_number }),
+      ...(image !== undefined && { image })
+    }
+
+    const updated = await agencyModel.updateAgency(req.params.id, updateData)
+    if (!updated) return res.status(404).json({ message: 'Agency not found' })
+    res.json(updated)
+  } catch (err) {
+    res.status(500).json({ message: err.message })
+  }
+}
+
+const remove = async (req, res) => {
+  try {
+    const agency = await agencyModel.getAgencyById(req.params.id)
+    if (!agency) return res.status(404).json({ message: 'Agency not found' })
+
+    await agencyModel.deleteAgency(req.params.id)
+    res.json({ message: 'Agency deleted successfully' })
+  } catch (error) {
+    res.status(500).json({ message: error.message })
+  }
+}
+
+module.exports = {
+  getAll,
+  getById,
+  create,
+  update,
+  remove,
+}
