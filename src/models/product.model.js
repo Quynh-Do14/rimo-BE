@@ -147,7 +147,7 @@ const createProduct = async (
     description,
     short_description,
     price,
-    percent_sale,
+    price_sale,
     year,
     warranty,
     category_id,
@@ -158,7 +158,7 @@ const createProduct = async (
   const result = await db.query(
     `INSERT INTO products (
       name, description, short_description,
-      price, percent_sale, year, warranty, category_id, brand_id, image
+      price, price_sale, year, warranty, category_id, brand_id, image
     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     RETURNING id`,
     [
@@ -166,7 +166,7 @@ const createProduct = async (
       description,
       short_description,
       price,
-      percent_sale,
+      price_sale,
       year,
       warranty,
       category_id,
@@ -209,7 +209,7 @@ const updateProduct = async (
     description,
     short_description,
     price,
-    percent_sale,
+    price_sale,
     year,
     warranty,
     category_id,
@@ -222,7 +222,7 @@ const updateProduct = async (
       description=$2, 
       short_description=$3, 
       price=$4, 
-      percent_sale=$5,
+      price_sale=$5,
       year=$6, 
       warranty=$7, 
       category_id=$8, 
@@ -232,7 +232,7 @@ const updateProduct = async (
     description,
     short_description,
     price,
-    percent_sale,
+    price_sale,
     year,
     warranty,
     category_id,
