@@ -146,7 +146,6 @@ const createProduct = async (
     name,
     description,
     short_description,
-    more_infomation,
     price,
     percent_sale,
     year,
@@ -158,7 +157,7 @@ const createProduct = async (
   // 1. Insert sản phẩm
   const result = await db.query(
     `INSERT INTO products (
-      name, description, short_description, more_infomation,
+      name, description, short_description,
       price, percent_sale, year, warranty, category_id, brand_id, image
     ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
     RETURNING id`,
@@ -166,7 +165,6 @@ const createProduct = async (
       name,
       description,
       short_description,
-      more_infomation,
       price,
       percent_sale,
       year,
@@ -210,7 +208,6 @@ const updateProduct = async (
     name,
     description,
     short_description,
-    more_infomation,
     price,
     percent_sale,
     year,
@@ -224,18 +221,16 @@ const updateProduct = async (
       name=$1, 
       description=$2, 
       short_description=$3, 
-      more_infomation=$4, 
-      price=$5, 
-      percent_sale=$6,
-      year=$7, 
-      warranty=$8, 
-      category_id=$9, 
-      brand_id=$10`
+      price=$4, 
+      percent_sale=$5,
+      year=$6, 
+      warranty=$7, 
+      category_id=$8, 
+      brand_id=$9`
   const params = [
     name,
     description,
     short_description,
-    more_infomation,
     price,
     percent_sale,
     year,
@@ -245,12 +240,12 @@ const updateProduct = async (
   ]
 
   if (image) {
-    updateQuery += `, image=$11`
+    updateQuery += `, image=$10`
     params.push(image)
-    updateQuery += ` WHERE id=$12 RETURNING *`
+    updateQuery += ` WHERE id=$11 RETURNING *`
     params.push(id)
   } else {
-    updateQuery += ` WHERE id=$11 RETURNING *`
+    updateQuery += ` WHERE id=$10 RETURNING *`
     params.push(id)
   }
 
