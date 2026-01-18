@@ -65,18 +65,20 @@ const createAgency = async ({
   lat,
   long,
   phone_number,
+  province,
+  district,
   image
 }) => {
   const result = await db.query(
-    'INSERT INTO agency(name, address, lat, long, phone_number, image) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
-    [name, address, lat, long, phone_number, image]
+    'INSERT INTO agency(name, address, lat, long, phone_number,province,district, image) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+    [name, address, lat, long, phone_number, province, district, image]
   )
   return result.rows[0]
 }
 
 const updateAgency = async (
   id,
-  { name, address, lat, long, phone_number, image }
+  { name, address, lat, long, phone_number, province, district, image }
 ) => {
   // Xây dựng câu truy vấn động
   const fields = []
@@ -108,6 +110,16 @@ const updateAgency = async (
     values.push(phone_number)
   }
 
+  if (province !== undefined) {
+    fields.push('province')
+    values.push(province)
+  }
+
+  if (district !== undefined) {
+    fields.push('district')
+    values.push(district)
+  }
+
   if (image !== undefined) {
     fields.push('image')
     values.push(image)
@@ -129,11 +141,10 @@ const deleteAgency = async id => {
   await db.query('DELETE FROM agency WHERE id = $1', [id])
 }
 
-
 module.exports = {
   getAllAgency,
   getAgencyById,
   createAgency,
   updateAgency,
-  deleteAgency,
+  deleteAgency
 }

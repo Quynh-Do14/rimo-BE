@@ -22,11 +22,12 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { name, address, lat, long, phone_number } = req.body
+    const { name, address, lat, long, phone_number, province, district } =
+      req.body
     const image = req.file ? `/uploads/${req.file.filename}` : null
 
     // Validate required fields
-    if (!name || !address || !phone_number) {
+    if (!name || !address || !phone_number || province || district) {
       return res
         .status(400)
         .json({ message: 'Name, address and phone number are required' })
@@ -35,9 +36,11 @@ const create = async (req, res) => {
     const newAgency = await agencyModel.createAgency({
       name,
       address,
-      lat: lat ? parseFloat(lat) : null,
-      long: long ? parseFloat(long) : null,
+      lat,
+      long,
       phone_number,
+      province,
+      district,
       image
     })
     res.status(201).json(newAgency)
@@ -48,7 +51,8 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const { name, address, lat, long, phone_number } = req.body
+    const { name, address, lat, long, phone_number, province, district } =
+      req.body
     const image = req.file
       ? `/uploads/${req.file.filename}`
       : req.body.image || undefined
@@ -59,6 +63,8 @@ const update = async (req, res) => {
       ...(lat !== undefined && { lat: parseFloat(lat) }),
       ...(long !== undefined && { long: parseFloat(long) }),
       ...(phone_number !== undefined && { phone_number }),
+      ...(province !== undefined && { province }),
+      ...(district !== undefined && { district }),
       ...(image !== undefined && { image })
     }
 
@@ -87,5 +93,5 @@ module.exports = {
   getById,
   create,
   update,
-  remove,
+  remove
 }
