@@ -2,8 +2,20 @@ const agencyModel = require('../models/agency.model')
 
 const getAll = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '' } = req.query
-    const result = await agencyModel.getAllAgency({ page, limit, search })
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      province = '',
+      district = ''
+    } = req.query
+    const result = await agencyModel.getAllAgency({
+      page,
+      limit,
+      search,
+      province,
+      district
+    })
     res.json(result)
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message })

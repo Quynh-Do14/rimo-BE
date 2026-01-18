@@ -1,16 +1,38 @@
 const db = require('../config/database')
 
-const getAllAgency = async ({ page = 1, limit = 10, search = '' }) => {
+const getAllAgency = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  province,
+  district
+}) => {
   const offset = (page - 1) * limit
   const conditions = []
   const values = []
+  let paramIndex = 1
 
-  // Xây dựng điều kiện WHERE nếu có tìm kiếm
+  // Xây dựng điều kiện WHERE nếu có tìm kiếm chung
   if (search) {
     values.push(`%${search}%`)
     conditions.push(
-      `(name ILIKE $${values.length} OR address ILIKE $${values.length} OR phone_number ILIKE $${values.length})`
+      `(name ILIKE $${paramIndex} OR address ILIKE $${paramIndex} OR phone_number ILIKE $${paramIndex})`
     )
+    paramIndex++
+  }
+
+  // Thêm điều kiện tìm kiếm theo province
+  if (province) {
+    values.push(`%${province}%`)
+    conditions.push(`province ILIKE $${paramIndex}`)
+    paramIndex++
+  }
+
+  // Thêm điều kiện tìm kiếm theo district
+  if (district) {
+    values.push(`%${district}%`)
+    conditions.push(`district ILIKE $${paramIndex}`)
+    paramIndex++
   }
 
   // Tạo câu WHERE nếu có điều kiện
@@ -22,8 +44,8 @@ const getAllAgency = async ({ page = 1, limit = 10, search = '' }) => {
     SELECT * FROM agency
     ${whereClause}
     ORDER BY id DESC
-    LIMIT $${values.length + 1}
-    OFFSET $${values.length + 2}
+    LIMIT $${paramIndex}
+    OFFSET $${paramIndex + 1}
   `
 
   // Câu truy vấn đếm tổng số dòng
@@ -33,15 +55,14 @@ const getAllAgency = async ({ page = 1, limit = 10, search = '' }) => {
   `
 
   // Thêm limit và offset vào values
-  values.push(limit)
-  values.push(offset)
+  values.push(limit, offset)
 
   // Thực hiện truy vấn
   const dataResult = await db.query(dataQuery, values)
-  const countResult = await db.query(
-    countQuery,
-    values.slice(0, conditions.length)
-  )
+
+  // Lấy các tham số chỉ dùng cho WHERE clause (loại bỏ limit và offset)
+  const countParams = values.slice(0, values.length - 2)
+  const countResult = await db.query(countQuery, countParams)
 
   const total = parseInt(countResult.rows[0].count)
 
