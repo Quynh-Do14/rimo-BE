@@ -39,7 +39,7 @@ const create = async (req, res) => {
     const image = req.file ? `/uploads/${req.file.filename}` : null
 
     // Validate required fields
-    if (!name || !address || !phone_number || province || district) {
+    if (!name || !address || !phone_number || !province || !district) {
       return res
         .status(400)
         .json({ message: 'Name, address and phone number are required' })
