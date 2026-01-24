@@ -19,6 +19,7 @@ const productSeriesRoutes = require('./src/routers/product-series.routes')
 const seriesRoutes = require('./src/routers/series.routes')
 const agencyRoutes = require('./src/routers/agency.routes')
 const categoryRoutes = require('./src/routers/category.routes')
+const agencyCategoryRoutes = require('./src/routers/agency-category.routes')
 const app = express()
 const PORT = process.env.PORT || 3000
 
@@ -38,6 +39,7 @@ app.use('/api/product', productRoutes)
 app.use('/api/product-series', productSeriesRoutes)
 app.use('/api/series', seriesRoutes)
 app.use('/api/category', categoryRoutes)
+app.use('/api/agency-category', agencyCategoryRoutes)
 app.use('/api/uploads', express.static('src/uploads'))
 // Health check
 app.get('/', (req, res) => {

@@ -5,7 +5,9 @@ const getAllAgency = async ({
   limit = 10,
   search = '',
   province,
-  district
+  district,
+  star_rate,
+  category_id
 }) => {
   const offset = (page - 1) * limit
   const conditions = []
@@ -32,6 +34,18 @@ const getAllAgency = async ({
   if (district) {
     values.push(`%${district}%`)
     conditions.push(`district ILIKE $${paramIndex}`)
+    paramIndex++
+  }
+
+  if (star_rate) {
+    values.push(`%${star_rate}%`)
+    conditions.push(`star_rate ILIKE $${paramIndex}`)
+    paramIndex++
+  }
+
+  if (category_id) {
+    values.push(`%${category_id}%`)
+    conditions.push(`category_id ILIKE $${paramIndex}`)
     paramIndex++
   }
 
@@ -88,18 +102,42 @@ const createAgency = async ({
   phone_number,
   province,
   district,
+  star_rate,
+  category_id,
   image
 }) => {
   const result = await db.query(
-    'INSERT INTO agency(name, address, lat, long, phone_number,province,district, image) VALUES($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-    [name, address, lat, long, phone_number, province, district, image]
+    'INSERT INTO agency(name, address, lat, long, phone_number,province,district,star_rate,category_id, image) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+    [
+      name,
+      address,
+      lat,
+      long,
+      phone_number,
+      province,
+      district,
+      star_rate,
+      category_id,
+      image
+    ]
   )
   return result.rows[0]
 }
 
 const updateAgency = async (
   id,
-  { name, address, lat, long, phone_number, province, district, image }
+  {
+    name,
+    address,
+    lat,
+    long,
+    phone_number,
+    province,
+    district,
+    star_rate,
+    category_id,
+    image
+  }
 ) => {
   // Xây dựng câu truy vấn động
   const fields = []
@@ -139,6 +177,16 @@ const updateAgency = async (
   if (district !== undefined) {
     fields.push('district')
     values.push(district)
+  }
+
+  if (star_rate !== undefined) {
+    fields.push('star_rate')
+    values.push(star_rate)
+  }
+
+  if (category_id !== undefined) {
+    fields.push('category_id')
+    values.push(category_id)
   }
 
   if (image !== undefined) {

@@ -7,14 +7,18 @@ const getAll = async (req, res) => {
       limit = 10,
       search = '',
       province = '',
-      district = ''
+      district = '',
+      star_rate = '',
+      category_id = ''
     } = req.query
     const result = await agencyModel.getAllAgency({
       page,
       limit,
       search,
       province,
-      district
+      district,
+      star_rate,
+      category_id
     })
     res.json(result)
   } catch (error) {
