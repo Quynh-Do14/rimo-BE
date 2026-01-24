@@ -25,8 +25,6 @@ const getById = async (req, res) => {
 }
 
 const create = async (req, res) => {
-  console.log('eq.body', req.body)
-  console.log('eq.body', req.files)
 
   try {
     const profile = await userModel.findUserById(req.user.id)

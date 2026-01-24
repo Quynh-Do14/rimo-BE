@@ -1,4 +1,6 @@
+const { ROLES } = require('../constants')
 const blogCategoryModel = require('../models/blog-category.model')
+const userModel = require('../models/user.model')
 
 const getAll = async (req, res) => {
   try {
@@ -21,12 +23,23 @@ const getById = async (req, res) => {
 }
 
 const create = async (req, res) => {
+  const profile = await userModel.findUserById(req.user.id)
+  const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+  if (!allowedRoles.includes(profile.role_name))
+    return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
+
   const { name } = req.body
   const category = await blogCategoryModel.createCategory(name)
   res.status(201).json(category)
 }
 
 const update = async (req, res) => {
+  const profile = await userModel.findUserById(req.user.id)
+  const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+  if (!allowedRoles.includes(profile.role_name))
+    return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
   const { name } = req.body
   const category = await blogCategoryModel.updateCategory(req.params.id, name)
   if (!category) return res.status(404).json({ message: 'Category not found' })
@@ -34,6 +47,12 @@ const update = async (req, res) => {
 }
 
 const remove = async (req, res) => {
+  const profile = await userModel.findUserById(req.user.id)
+  const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+  if (!allowedRoles.includes(profile.role_name))
+    return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
+
   await blogCategoryModel.deleteCategory(req.params.id)
   res.json({ message: 'Category deleted' })
 }

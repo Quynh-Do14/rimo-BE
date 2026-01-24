@@ -1,4 +1,6 @@
+const { ROLES } = require('../constants')
 const agencyModel = require('../models/agency.model')
+const userModel = require('../models/user.model')
 
 const getAll = async (req, res) => {
   try {
@@ -38,8 +40,24 @@ const getById = async (req, res) => {
 
 const create = async (req, res) => {
   try {
-    const { name, address, lat, long, phone_number, province, district } =
-      req.body
+    const profile = await userModel.findUserById(req.user.id)
+    const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+    if (!allowedRoles.includes(profile.role_name)) {
+      return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
+    }
+
+    const {
+      name,
+      address,
+      lat,
+      long,
+      phone_number,
+      province,
+      district,
+      star_rate,
+      agency_category_type
+    } = req.body
     const image = req.file ? `/uploads/${req.file.filename}` : null
 
     // Validate required fields
@@ -49,6 +67,10 @@ const create = async (req, res) => {
         .json({ message: 'Name, address and phone number are required' })
     }
 
+    const agencyCategoryType = JSON.parse(agency_category_type || '[]')
+    console.log('agencyCategoryType', agencyCategoryType)
+    console.log('agency_category_type1', agency_category_type)
+
     const newAgency = await agencyModel.createAgency({
       name,
       address,
@@ -57,6 +79,8 @@ const create = async (req, res) => {
       phone_number,
       province,
       district,
+      star_rate,
+      agency_category_type: agencyCategoryType,
       image
     })
     res.status(201).json(newAgency)
@@ -67,11 +91,28 @@ const create = async (req, res) => {
 
 const update = async (req, res) => {
   try {
-    const { name, address, lat, long, phone_number, province, district } =
-      req.body
+    const profile = await userModel.findUserById(req.user.id)
+    const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+    if (!allowedRoles.includes(profile.role_name))
+      return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
+
+    const {
+      name,
+      address,
+      lat,
+      long,
+      phone_number,
+      province,
+      district,
+      agency_category_type
+    } = req.body
     const image = req.file
       ? `/uploads/${req.file.filename}`
       : req.body.image || undefined
+
+    const agencyCategoryType = JSON.parse(agency_category_type || '[]')
+    console.log('agencyCategoryType', agencyCategoryType)
 
     const updateData = {
       ...(name !== undefined && { name }),
@@ -81,6 +122,9 @@ const update = async (req, res) => {
       ...(phone_number !== undefined && { phone_number }),
       ...(province !== undefined && { province }),
       ...(district !== undefined && { district }),
+      ...(agencyCategoryType !== undefined && {
+        agency_category_type: agencyCategoryType
+      }),
       ...(image !== undefined && { image })
     }
 
@@ -94,6 +138,12 @@ const update = async (req, res) => {
 
 const remove = async (req, res) => {
   try {
+    const profile = await userModel.findUserById(req.user.id)
+    const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+    if (!allowedRoles.includes(profile.role_name))
+      return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
+
     const agency = await agencyModel.getAgencyById(req.params.id)
     if (!agency) return res.status(404).json({ message: 'Agency not found' })
 
