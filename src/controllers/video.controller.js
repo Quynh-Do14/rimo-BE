@@ -20,13 +20,10 @@ const getById = async (req, res) => {
 const create = async (req, res) => {
   try {
     const { name, description, link_url } = req.body
-    const image = req.file ? `/uploads/${req.file.filename}` : null
-
     const newCategory = await videoModel.createVideo({
       name,
       description,
       link_url,
-      image
     })
     res.status(201).json(newCategory)
   } catch (err) {
@@ -37,15 +34,10 @@ const create = async (req, res) => {
 const update = async (req, res) => {
   try {
     const { name, description, link_url } = req.body
-    const image = req.file
-      ? `/uploads/${req.file.filename}`
-      : req.body.image || null
-
     const updated = await videoModel.updateVideo(req.params.id, {
       name,
       description,
       link_url,
-      image
     })
     if (!updated) return res.status(404).json({ message: 'Not found' })
     res.json(updated)

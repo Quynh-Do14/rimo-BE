@@ -1,10 +1,10 @@
 const db = require('../config/database')
 
-const getAllVideos = async ({ page = 1, limit = 10, search = '' }) => {
+const getAllContacs = async ({ page = 1, limit = 10, search = '' }) => {
   const offset = (page - 1) * limit
   const queryParams = []
-  let query = 'SELECT * FROM videos'
-  let countQuery = 'SELECT COUNT(*) FROM videos'
+  let query = 'SELECT * FROM contact'
+  let countQuery = 'SELECT COUNT(*) FROM contact'
   let conditions = []
 
   // Tìm kiếm theo tên (search)
@@ -44,46 +44,35 @@ const getAllVideos = async ({ page = 1, limit = 10, search = '' }) => {
   }
 }
 
-const getVideoById = async id => {
-  const result = await db.query('SELECT * FROM videos WHERE id = $1', [id])
+const getContactById = async id => {
+  const result = await db.query('SELECT * FROM contact WHERE id = $1', [id])
   return result.rows[0]
 }
 
-const createVideo = async ({ name, description, link_url }) => {
+const createContact = async (name, email, phone_number, message) => {
   const result = await db.query(
-    'INSERT INTO videos(name, description, link_url) VALUES($1, $2, $3) RETURNING *',
-    [name, description, link_url]
+    'INSERT INTO contact(name, email, phone_number, message) VALUES($1, $2, $3, $4) RETURNING *',
+    [name, email, phone_number, message]
   )
   return result.rows[0]
 }
 
-const updateVideo = async (id, { name, image, description, link_url }) => {
-  const fields = ['name', 'description', 'link_url']
-  const values = [name, description, link_url]
-  let query = 'UPDATE videos SET name = $1, description = $2, link_url =$3'
-
-  if (image !== undefined && image !== null && image !== '') {
-    fields.push('image')
-    values.push(image)
-    query =
-      'UPDATE videos SET name = $1, description = $2, link_url = $3'
-  }
-
-  query += ` WHERE id = $${fields.length + 1} RETURNING *`
-  values.push(id)
-
-  const result = await db.query(query, values)
+const updateContact = async (id, name, email, phone_number, message) => {
+  const result = await db.query(
+    'UPDATE contact SET name = $1, name = $2, email = $3, message = $4 WHERE id = $5 RETURNING *',
+    [name, email, phone_number, message, id]
+  )
   return result.rows[0]
 }
 
-const deleteVideo = async id => {
-  await db.query('DELETE FROM videos WHERE id = $1', [id])
+const deleteContact = async id => {
+  await db.query('DELETE FROM contact WHERE id = $1', [id])
 }
 
 module.exports = {
-  getAllVideos,
-  getVideoById,
-  createVideo,
-  updateVideo,
-  deleteVideo
+  getAllContacs,
+  getContactById,
+  createContact,
+  updateContact,
+  deleteContact
 }
