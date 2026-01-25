@@ -1,12 +1,12 @@
 const express = require('express')
 const router = express.Router()
-const blogCategoryController = require('../controllers/blog-category.controller')
+const contactController = require('../controllers/contact.controller')
 const { authenticate } = require('../middlewares/auth.middleware')
 
-router.get('/', authenticate, blogCategoryController.getAll)
-router.get('/:id', blogCategoryController.getById)
-router.post('/', blogCategoryController.create)
-router.put('/:id', authenticate, blogCategoryController.update)
-router.delete('/:id', authenticate, blogCategoryController.remove)
+router.get('/', authenticate, contactController.getAll)
+router.get('/:id', contactController.getById)
+router.post('/', contactController.create)
+router.put('/:id', authenticate, contactController.update)
+router.delete('/:id', authenticate, contactController.remove)
 
 module.exports = router

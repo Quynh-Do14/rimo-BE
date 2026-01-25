@@ -3,8 +3,8 @@ const db = require('../config/database')
 const getAllContacs = async ({ page = 1, limit = 10, search = '' }) => {
   const offset = (page - 1) * limit
   const queryParams = []
-  let query = 'SELECT * FROM contact'
-  let countQuery = 'SELECT COUNT(*) FROM contact'
+  let query = 'SELECT * FROM contacts'
+  let countQuery = 'SELECT COUNT(*) FROM contacts'
   let conditions = []
 
   // Tìm kiếm theo tên (search)
@@ -45,13 +45,13 @@ const getAllContacs = async ({ page = 1, limit = 10, search = '' }) => {
 }
 
 const getContactById = async id => {
-  const result = await db.query('SELECT * FROM contact WHERE id = $1', [id])
+  const result = await db.query('SELECT * FROM contacts WHERE id = $1', [id])
   return result.rows[0]
 }
 
 const createContact = async (name, email, phone_number, message) => {
   const result = await db.query(
-    'INSERT INTO contact(name, email, phone_number, message) VALUES($1, $2, $3, $4) RETURNING *',
+    'INSERT INTO contacts(name, email, phone_number, message) VALUES($1, $2, $3, $4) RETURNING *',
     [name, email, phone_number, message]
   )
   return result.rows[0]
@@ -59,14 +59,14 @@ const createContact = async (name, email, phone_number, message) => {
 
 const updateContact = async (id, name, email, phone_number, message) => {
   const result = await db.query(
-    'UPDATE contact SET name = $1, name = $2, email = $3, message = $4 WHERE id = $5 RETURNING *',
+    'UPDATE contacts SET name = $1, name = $2, email = $3, message = $4 WHERE id = $5 RETURNING *',
     [name, email, phone_number, message, id]
   )
   return result.rows[0]
 }
 
 const deleteContact = async id => {
-  await db.query('DELETE FROM contact WHERE id = $1', [id])
+  await db.query('DELETE FROM contacts WHERE id = $1', [id])
 }
 
 module.exports = {
