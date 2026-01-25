@@ -3,9 +3,9 @@ const router = express.Router()
 const blogCategoryController = require('../controllers/blog-category.controller')
 const { authenticate } = require('../middlewares/auth.middleware')
 
-router.get('/', blogCategoryController.getAll)
+router.get('/', authenticate, blogCategoryController.getAll)
 router.get('/:id', blogCategoryController.getById)
-router.post('/', authenticate, blogCategoryController.create)
+router.post('/', blogCategoryController.create)
 router.put('/:id', authenticate, blogCategoryController.update)
 router.delete('/:id', authenticate, blogCategoryController.remove)
 
