@@ -59,7 +59,7 @@ const getBannerById = async id => {
 
 const createBanner = async ({ name, image, type }) => {
   // Danh sách type hợp lệ
-  const validTypes = ['HOMEPAGE', 'INTRODUCE', 'AGENCY', 'CONTACT']
+  const validTypes = ['HOMEPAGE', 'INTRODUCE', 'AGENCY', 'CONTACT', 'POLICY']
 
   // Validate type
   if (!type || type.trim() === '') {
@@ -88,7 +88,8 @@ const createBanner = async ({ name, image, type }) => {
         HOMEPAGE: 'Trang chủ',
         INTRODUCE: 'Giới thiệu',
         AGENCY: 'Đại lý',
-        CONTACT: 'Liên hệ'
+        CONTACT: 'Liên hệ',
+        POLICY: 'Chính sách'
       }
       const typeLabel = typeLabels[type] || type
       throw new Error(
@@ -115,7 +116,7 @@ const createBanner = async ({ name, image, type }) => {
 
 const updateBanner = async (id, { name, image, type }) => {
   // Danh sách type hợp lệ
-  const validTypes = ['HOMEPAGE', 'INTRODUCE', 'AGENCY', 'CONTACT']
+  const validTypes = ['HOMEPAGE', 'INTRODUCE', 'AGENCY', 'CONTACT', 'POLICY']
 
   // Kiểm tra ID hợp lệ
   if (!id) {
@@ -164,7 +165,8 @@ const updateBanner = async (id, { name, image, type }) => {
           HOMEPAGE: 'Trang chủ',
           INTRODUCE: 'Giới thiệu',
           AGENCY: 'Đại lý',
-          CONTACT: 'Liên hệ'
+          CONTACT: 'Liên hệ',
+          POLICY: 'Chính sách'
         }
         const typeLabel = typeLabels[type] || type
         throw new Error(
@@ -191,7 +193,8 @@ const updateBanner = async (id, { name, image, type }) => {
           HOMEPAGE: 'Trang chủ',
           INTRODUCE: 'Giới thiệu',
           AGENCY: 'Đại lý',
-          CONTACT: 'Liên hệ'
+          CONTACT: 'Liên hệ',
+          POLICY: 'Chính sách'
         }
         const typeLabel = typeLabels[type] || type
         throw new Error(
