@@ -48,7 +48,7 @@ const getByIdPrivate = async (req, res) => {
   if (!allowedRoles.includes(profile.role_name)) {
     return res.status(403).json({ message: MESSAGES.UNAUTHORIZED })
   }
-  const data = await videoModel.getVideoById(req.params.id)
+  const data = await videoModel.getVideoByIdPrivate(req.params.id)
   if (!data) return res.status(404).json({ message: 'Not found' })
   res.json(data)
 }
