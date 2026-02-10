@@ -6,17 +6,18 @@ const { authenticate } = require('../middlewares/auth.middleware')
 
 // CRUD danh mục sản phẩm
 router.get('/', categoryController.getAll)
+router.get('/private/:id', authenticate, categoryController.getByIdPrivate)
 router.get('/:id', categoryController.getById)
 router.post(
   '/',
   authenticate,
-//   upload.single('image'),
+  //   upload.single('image'),
   categoryController.create
 )
 router.put(
   '/:id',
   authenticate,
-//   upload.single('image'),
+  //   upload.single('image'),
   categoryController.update
 )
 router.delete('/:id', authenticate, categoryController.remove)

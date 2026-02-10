@@ -63,6 +63,25 @@ const getCategoryById = async id => {
   }
 }
 
+const getCategoryByIdPrivate = async id => {
+  try {
+    const result = await db.query(
+      'SELECT * FROM blog_categories WHERE id = $1',
+      [id]
+    )
+    const category = result.rows[0]
+    const blog = await db.query(
+      'SELECT * FROM blog WHERE blog_category_id = $1',
+      [id]
+    )
+    category.blog = blog.rows
+    return category
+  } catch (error) {
+    console.error('Lỗi khi lấy chi tiết danh mục blog:', error)
+    throw new AppError('Lỗi server khi lấy thông tin danh mục blog', 500)
+  }
+}
+
 const getCategoryByName = async name => {
   try {
     const result = await db.query(
@@ -211,6 +230,7 @@ const deleteCategory = async id => {
 module.exports = {
   getAllCategories,
   getCategoryById,
+  getCategoryByIdPrivate,
   getCategoryByName,
   createCategory,
   updateCategory,
