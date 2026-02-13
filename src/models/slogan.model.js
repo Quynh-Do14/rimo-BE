@@ -77,7 +77,7 @@ const getAllSloganPrivate = async ({
   // Thêm phân trang
   queryParams.push(limit)
   queryParams.push(offset)
-  query += ` ORDER BY index DESC LIMIT $${queryParams.length - 1} OFFSET $${
+  query += ` ORDER BY id DESC LIMIT $${queryParams.length - 1} OFFSET $${
     queryParams.length
   }`
 
