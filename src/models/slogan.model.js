@@ -191,73 +191,63 @@ const updateSlogan = async (
  * Cập nhật index hàng loạt cho nhiều slogan
  * @param {Array} items - Mảng các object chứa { id, index }
  */
-const updateSloganIndexes = async items => {
-  const client = await db.getClient()
-
+const updateSloganIndexes = async (items) => {
   try {
-    await client.query('BEGIN')
-
     const updatedItems = []
-
+    
     for (const item of items) {
       const { id, index } = item
-
+      
       // Validate id và index
       if (!id || isNaN(parseInt(id))) {
         throw new AppError(`ID không hợp lệ: ${id}`, 400)
       }
-
+      
       if (index === undefined || index === null || isNaN(parseInt(index))) {
         throw new AppError(`Số thứ tự không hợp lệ cho ID ${id}`, 400)
       }
-
+      
       // Kiểm tra slogan có tồn tại không
-      const checkExist = await client.query(
+      const checkExist = await db.query(
         'SELECT id FROM slogans WHERE id = $1',
         [id]
       )
-
+      
       if (checkExist.rows.length === 0) {
         throw new AppError(`Không tìm thấy slogan với ID: ${id}`, 404)
       }
-
+      
       // Kiểm tra index đã tồn tại ở slogan khác chưa
-      const existingIndex = await client.query(
+      const existingIndex = await db.query(
         'SELECT id FROM slogans WHERE index = $1 AND id != $2',
         [index, id]
       )
-
+      
       if (existingIndex.rows.length > 0) {
         throw new AppError(`Số thứ tự ${index} đã tồn tại ở slogan khác`, 400)
       }
-
+      
       // Cập nhật index
-      const result = await client.query(
+      const result = await db.query(
         'UPDATE slogans SET index = $1 WHERE id = $2 RETURNING id, index, name',
         [index, id]
       )
-
+      
       updatedItems.push(result.rows[0])
     }
-
-    await client.query('COMMIT')
-
+    
     return {
       success: true,
       message: 'Cập nhật số thứ tự thành công',
       data: updatedItems
     }
   } catch (error) {
-    await client.query('ROLLBACK')
-
     if (error instanceof AppError) {
       throw error
     }
-
+    
     console.error('Lỗi khi cập nhật index hàng loạt:', error)
     throw new AppError('Lỗi server khi cập nhật số thứ tự', 500)
-  } finally {
-    client.release()
   }
 }
 
