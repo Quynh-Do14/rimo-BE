@@ -24,7 +24,7 @@ const getAllSlogan = async ({ page = 1, limit = 10, search = '' }) => {
   // Thêm phân trang
   queryParams.push(limit)
   queryParams.push(offset)
-  query += ` ORDER BY id ASC LIMIT $${queryParams.length - 1} OFFSET $${
+  query += ` ORDER BY index ASC LIMIT $${queryParams.length - 1} OFFSET $${
     queryParams.length
   }`
 
@@ -45,7 +45,12 @@ const getAllSlogan = async ({ page = 1, limit = 10, search = '' }) => {
   }
 }
 
-const getAllSloganPrivate = async ({ page = 1, limit = 10, search = '' }) => {
+const getAllSloganPrivate = async ({
+  page = 1,
+  limit = 10,
+  search = '',
+  active = ''
+}) => {
   const offset = (page - 1) * limit
   const queryParams = []
   let query = 'SELECT * FROM slogans'
@@ -58,6 +63,10 @@ const getAllSloganPrivate = async ({ page = 1, limit = 10, search = '' }) => {
     conditions.push(`LOWER(name) LIKE LOWER($${queryParams.length})`)
   }
 
+  if (active) {
+    queryParams.push(active) // ✅ Không cần % vì là so sánh bằng
+    conditions.push(`active = $${queryParams.length}`) // ✅ active là boolean, không cần LOWER
+  }
   // Gắn điều kiện nếu có
   if (conditions.length > 0) {
     const whereClause = ` WHERE ${conditions.join(' AND ')}`
@@ -102,27 +111,65 @@ const getSloganByIdPrivate = async id => {
   return result.rows[0]
 }
 
-const createSlogan = async ({ name, description, type, active, image }) => {
+const createSlogan = async ({
+  name,
+  description,
+  type,
+  index,
+  active,
+  image
+}) => {
   try {
+    // Kiểm tra index đã tồn tại chưa
+    const existingIndex = await db.query(
+      'SELECT id FROM slogans WHERE index = $1',
+      [index]
+    )
+
+    if (existingIndex.rows.length > 0) {
+      throw new AppError(`Số thứ tự ${index} đã tồn tại`, 400)
+    }
+
     const result = await db.query(
-      'INSERT INTO slogans(name, description, type, active, image) VALUES($1, $2, $3, $4, $5) RETURNING *',
-      [name, description, type, active, image]
+      'INSERT INTO slogans(name, description, type, index, active, image) VALUES($1, $2, $3, $4, $5, $6) RETURNING *',
+      [String(name).trim(), description, type, index, active, image]
     )
     return result.rows[0]
   } catch (error) {
     if (error.code === '23505') {
       // Duplicate name
-      throw new AppError('Tên slogan đã tồn tại', 400)
+      throw new AppError('Tiêu đề đã tồn tại', 400)
+    }
+    if (error instanceof AppError) {
+      throw error
     }
     throw error
   }
 }
 
-const updateSlogan = async (id, name, description, type, active, image) => {
+const updateSlogan = async (
+  id,
+  name,
+  description,
+  type,
+  index,
+  active,
+  image
+) => {
   try {
+    // Kiểm tra index đã tồn tại chưa (loại trừ slogan hiện tại)
+    const existingIndex = await db.query(
+      'SELECT id FROM slogans WHERE index = $1 AND id != $2',
+      [index, id]
+    )
+
+    if (existingIndex.rows.length > 0) {
+      throw new AppError(`Số thứ tự ${index} đã tồn tại`, 400)
+    }
+
     const result = await db.query(
-      'UPDATE slogans SET name = $1, description = $2, type = $3, active = $4, image = $5 WHERE id = $6 RETURNING *',
-      [String(name).trim(), description, type, active, image, id]
+      'UPDATE slogans SET name = $1, description = $2, type = $3, index = $4, active = $5, image = $6 WHERE id = $7 RETURNING *',
+      [String(name).trim(), description, type, index, active, image, id]
     )
 
     if (result.rows.length === 0) {
@@ -139,6 +186,67 @@ const updateSlogan = async (id, name, description, type, active, image) => {
     throw new AppError('Lỗi server khi cập nhật slogan', 500)
   }
 }
+
+/**
+ * Cập nhật index hàng loạt cho nhiều slogan
+ * @param {Array} items - Mảng các object chứa { id, index }
+ */
+const updateSloganIndexes = async items => {
+  try {
+    const updatedItems = []
+
+    for (const item of items) {
+      const { id, index } = item
+
+      // Validate id và index
+      if (!id || isNaN(parseInt(id))) {
+        throw new AppError(`ID không hợp lệ: ${id}`, 400)
+      }
+
+      if (index === undefined || index === null || isNaN(parseInt(index))) {
+        throw new AppError(`Số thứ tự không hợp lệ cho ID ${id}`, 400)
+      }
+
+      // Kiểm tra slogan có tồn tại không
+      const checkExist = await db.query(
+        'SELECT id FROM slogans WHERE id = $1',
+        [id]
+      )
+
+      if (checkExist.rows.length === 0) {
+        throw new AppError(`Không tìm thấy slogan với ID: ${id}`, 404)
+      }
+
+      // Kiểm tra index đã tồn tại ở slogan khác chưa
+      const existingIndex = await db.query(
+        'SELECT id FROM slogans WHERE index = $1 AND id != $2',
+        [index, id]
+      )
+
+      // Cập nhật index
+      const result = await db.query(
+        'UPDATE slogans SET index = $1 WHERE id = $2 RETURNING id, index, name',
+        [index, id]
+      )
+
+      updatedItems.push(result.rows[0])
+    }
+
+    return {
+      success: true,
+      message: 'Cập nhật số thứ tự thành công',
+      data: updatedItems
+    }
+  } catch (error) {
+    if (error instanceof AppError) {
+      throw error
+    }
+
+    console.error('Lỗi khi cập nhật index hàng loạt:', error)
+    throw new AppError('Lỗi server khi cập nhật số thứ tự', 500)
+  }
+}
+
 const deleteSlogan = async id => {
   try {
     // Nếu không có sản phẩm, thực hiện xóa
@@ -168,5 +276,6 @@ module.exports = {
   getSloganByIdPrivate,
   createSlogan,
   updateSlogan,
+  updateSloganIndexes,
   deleteSlogan
 }

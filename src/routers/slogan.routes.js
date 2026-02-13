@@ -10,6 +10,7 @@ router.get('/private', sloganController.getAllPrivate)
 router.get('/private/:id', authenticate, sloganController.getByIdPrivate)
 router.get('/:id', authenticate, sloganController.getById)
 router.post('/', authenticate, upload.single('image'), sloganController.create)
+router.put('/update-index', authenticate, sloganController.updateIndexes)
 router.put(
   '/:id',
   authenticate,

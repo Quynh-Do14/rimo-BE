@@ -16,12 +16,13 @@ const getAll = async (req, res) => {
 
 const getAllPrivate = async (req, res) => {
   try {
-    const { page = 1, limit = 10, search = '' } = req.query
+    const { page = 1, limit = 10, search = '', active = '' } = req.query
 
     const result = await sloganModel.getAllSloganPrivate({
       page,
       limit,
-      search
+      search,
+      active
     })
     res.json(result)
   } catch (error) {
@@ -43,15 +44,15 @@ const getByIdPrivate = async (req, res) => {
 
 const create = async (req, res, next) => {
   try {
-    const { name, description, type, active } = req.body
+    const { name, description, type, index, active } = req.body
 
     // Validate dữ liệu đầu vào
     if (!name || name.trim() === '') {
-      throw new AppError('Tên danh mục là bắt buộc', 400)
+      throw new AppError('Tiêu đề là bắt buộc', 400)
     }
 
     if (name.length > 255) {
-      throw new AppError('Tên danh mục không được vượt quá 255 ký tự', 400)
+      throw new AppError('Tiêu đề không được vượt quá 255 ký tự', 400)
     }
 
     const image = req.file ? `/uploads/${req.file.filename}` : null
@@ -60,6 +61,7 @@ const create = async (req, res, next) => {
       name: name.trim(),
       description: description ? description.trim() : null,
       type,
+      index,
       active,
       image
     })
@@ -83,9 +85,10 @@ const update = async (req, res, next) => {
     if (!allowedRoles.includes(profile.role_name)) {
       throw new AppError('Không có quyền thực hiện hành động này', 403)
     }
+
     const image = req.file ? `/uploads/${req.file.filename}` : null
     const { id } = req.params
-    const { name, description, type, active } = req.body
+    const { name, description, type, index, active } = req.body
 
     // Validate input
     if (!id || isNaN(parseInt(id))) {
@@ -105,6 +108,7 @@ const update = async (req, res, next) => {
       name.trim(),
       description,
       type,
+      index,
       active,
       image
     )
@@ -117,6 +121,85 @@ const update = async (req, res, next) => {
       success: true,
       message: 'Cập nhật danh mục blog thành công',
       data: Slogan
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
+/**
+ * Cập nhật index hàng loạt cho nhiều slogan
+ * API endpoint: PUT /api/slogans/update-indexes
+ * Body: { items: [{ id: 1, index: 1 }, { id: 2, index: 2 }] }
+ */
+const updateIndexes = async (req, res, next) => {
+  try {
+    // Kiểm tra quyền truy cập
+    const profile = await userModel.findUserById(req.user.id)
+    const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+    if (!allowedRoles.includes(profile.role_name)) {
+      throw new AppError('Không có quyền thực hiện hành động này', 403)
+    }
+
+    const { items } = req.body
+
+    // Validate items
+    if (!items || !Array.isArray(items)) {
+      throw new AppError('Danh sách items không hợp lệ', 400)
+    }
+
+    if (items.length === 0) {
+      throw new AppError('Danh sách items không được để trống', 400)
+    }
+
+    if (items.length > 100) {
+      throw new AppError('Chỉ được cập nhật tối đa 100 items cùng lúc', 400)
+    }
+
+    // Kiểm tra trùng lặp ID trong request
+    const ids = items.map(item => item.id)
+    const uniqueIds = [...new Set(ids)]
+
+    if (ids.length !== uniqueIds.length) {
+      throw new AppError('Phát hiện ID trùng lặp trong request', 400)
+    }
+
+    // Kiểm tra trùng lặp index trong request
+    const indexes = items.map(item => item.index)
+    const uniqueIndexes = [...new Set(indexes)]
+
+    if (indexes.length !== uniqueIndexes.length) {
+      throw new AppError('Phát hiện số thứ tự trùng lặp trong request', 400)
+    }
+
+    // Validate từng item
+    for (const item of items) {
+      if (!item.id || isNaN(parseInt(item.id))) {
+        throw new AppError(`ID không hợp lệ: ${item.id}`, 400)
+      }
+
+      if (
+        item.index === undefined ||
+        item.index === null ||
+        isNaN(parseInt(item.index))
+      ) {
+        throw new AppError(`Số thứ tự không hợp lệ cho ID ${item.id}`, 400)
+      }
+
+      const indexNum = parseInt(item.index)
+      if (indexNum < 0) {
+        throw new AppError(`Số thứ tự không được âm cho ID ${item.id}`, 400)
+      }
+    }
+
+    // Gọi model để cập nhật
+    const result = await sloganModel.updateSloganIndexes(items)
+
+    res.json({
+      success: true,
+      message: 'Cập nhật số thứ tự thành công',
+      data: result.data
     })
   } catch (error) {
     next(error)
@@ -163,5 +246,6 @@ module.exports = {
   getByIdPrivate,
   create,
   update,
+  updateIndexes,
   remove
 }
