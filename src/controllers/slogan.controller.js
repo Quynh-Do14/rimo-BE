@@ -110,11 +110,11 @@ const update = async (req, res, next) => {
     }
 
     if (!name || name.trim() === '') {
-      throw new AppError('Tên danh mục blog là bắt buộc', 400)
+      throw new AppError('Tiêu đề là bắt buộc', 400)
     }
 
     if (name.length > 255) {
-      throw new AppError('Tên danh mục blog không được vượt quá 255 ký tự', 400)
+      throw new AppError('Tiêu đề không được vượt quá 255 ký tự', 400)
     }
 
     const Slogan = await sloganModel.updateSlogan(
@@ -133,7 +133,7 @@ const update = async (req, res, next) => {
 
     res.json({
       success: true,
-      message: 'Cập nhật danh mục blog thành công',
+      message: 'Cập nhật thành công',
       data: Slogan
     })
   } catch (error) {

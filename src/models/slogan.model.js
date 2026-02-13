@@ -24,7 +24,7 @@ const getAllSlogan = async ({ page = 1, limit = 10, search = '' }) => {
   // Thêm phân trang
   queryParams.push(limit)
   queryParams.push(offset)
-  query += ` ORDER BY index DESC LIMIT $${queryParams.length - 1} OFFSET $${
+  query += ` ORDER BY index ASC LIMIT $${queryParams.length - 1} OFFSET $${
     queryParams.length
   }`
 
@@ -215,6 +215,10 @@ const updateSloganIndexes = async items => {
 
       if (checkExist.rows.length === 0) {
         throw new AppError(`Không tìm thấy slogan với ID: ${id}`, 404)
+      }
+
+      if (existingIndex.rows.length > 0) {
+        throw new AppError(`Số thứ tự ${index} đã tồn tại ở slogan khác`, 400)
       }
 
       // Kiểm tra index đã tồn tại ở slogan khác chưa
