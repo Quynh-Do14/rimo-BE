@@ -6,7 +6,7 @@ const { authenticate } = require('../middlewares/auth.middleware')
 
 // CRUD danh mục sản phẩm
 router.get('/', sloganController.getAll)
-router.get('/private', sloganController.getAllPrivate)
+router.get('/private', authenticate, sloganController.getAllPrivate)
 router.get('/private/:id', authenticate, sloganController.getByIdPrivate)
 router.get('/:id', authenticate, sloganController.getById)
 router.post('/', authenticate, upload.single('image'), sloganController.create)
