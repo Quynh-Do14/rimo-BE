@@ -15,6 +15,13 @@ const getAll = async (req, res) => {
 }
 
 const getAllPrivate = async (req, res) => {
+  const profile = await userModel.findUserById(req.user.id)
+  const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+  if (!allowedRoles.includes(profile.role_name)) {
+    throw new AppError('Không có quyền thực hiện hành động này', 403)
+  }
+
   try {
     const { page = 1, limit = 10, search = '', active = '' } = req.query
 
@@ -37,6 +44,13 @@ const getById = async (req, res) => {
 }
 
 const getByIdPrivate = async (req, res) => {
+  const profile = await userModel.findUserById(req.user.id)
+  const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+  if (!allowedRoles.includes(profile.role_name)) {
+    throw new AppError('Không có quyền thực hiện hành động này', 403)
+  }
+
   const data = await sloganModel.getSloganByIdPrivate(req.params.id)
   if (!data) return res.status(404).json({ message: 'Not found' })
   res.json(data)
