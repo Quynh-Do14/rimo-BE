@@ -192,7 +192,11 @@ const updateSlogan = async (
  * @param {Array} items - Mảng các object chứa { id, index }
  */
 const updateSloganIndexes = async items => {
+  const client = await db.getClient()
+
   try {
+    await client.query('BEGIN')
+
     const updatedItems = []
 
     for (const item of items) {
@@ -208,7 +212,7 @@ const updateSloganIndexes = async items => {
       }
 
       // Kiểm tra slogan có tồn tại không
-      const checkExist = await db.query(
+      const checkExist = await client.query(
         'SELECT id FROM slogans WHERE id = $1',
         [id]
       )
@@ -217,18 +221,18 @@ const updateSloganIndexes = async items => {
         throw new AppError(`Không tìm thấy slogan với ID: ${id}`, 404)
       }
 
-      if (existingIndex.rows.length > 0) {
-        throw new AppError(`Số thứ tự ${index} đã tồn tại ở slogan khác`, 400)
-      }
-
       // Kiểm tra index đã tồn tại ở slogan khác chưa
-      const existingIndex = await db.query(
+      const existingIndex = await client.query(
         'SELECT id FROM slogans WHERE index = $1 AND id != $2',
         [index, id]
       )
 
+      if (existingIndex.rows.length > 0) {
+        throw new AppError(`Số thứ tự ${index} đã tồn tại ở slogan khác`, 400)
+      }
+
       // Cập nhật index
-      const result = await db.query(
+      const result = await client.query(
         'UPDATE slogans SET index = $1 WHERE id = $2 RETURNING id, index, name',
         [index, id]
       )
@@ -236,18 +240,24 @@ const updateSloganIndexes = async items => {
       updatedItems.push(result.rows[0])
     }
 
+    await client.query('COMMIT')
+
     return {
       success: true,
       message: 'Cập nhật số thứ tự thành công',
       data: updatedItems
     }
   } catch (error) {
+    await client.query('ROLLBACK')
+
     if (error instanceof AppError) {
       throw error
     }
 
     console.error('Lỗi khi cập nhật index hàng loạt:', error)
     throw new AppError('Lỗi server khi cập nhật số thứ tự', 500)
+  } finally {
+    client.release()
   }
 }
 
