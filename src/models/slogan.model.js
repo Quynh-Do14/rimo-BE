@@ -191,61 +191,91 @@ const updateSlogan = async (
  * Cập nhật index hàng loạt cho nhiều slogan
  * @param {Array} items - Mảng các object chứa { id, index }
  */
-const updateSloganIndexes = async (items) => {
+const updateSloganIndexes = async items => {
   try {
-    const updatedItems = []
-    
+    // Validate dữ liệu trước
     for (const item of items) {
       const { id, index } = item
-      
-      // Validate id và index
+
       if (!id || isNaN(parseInt(id))) {
         throw new AppError(`ID không hợp lệ: ${id}`, 400)
       }
-      
+
       if (index === undefined || index === null || isNaN(parseInt(index))) {
         throw new AppError(`Số thứ tự không hợp lệ cho ID ${id}`, 400)
       }
-      
-      // Kiểm tra slogan có tồn tại không
-      const checkExist = await db.query(
-        'SELECT id FROM slogans WHERE id = $1',
-        [id]
-      )
-      
-      if (checkExist.rows.length === 0) {
-        throw new AppError(`Không tìm thấy slogan với ID: ${id}`, 404)
-      }
-      
-      // Kiểm tra index đã tồn tại ở slogan khác chưa
-      const existingIndex = await db.query(
-        'SELECT id FROM slogans WHERE index = $1 AND id != $2',
-        [index, id]
-      )
-      
-      if (existingIndex.rows.length > 0) {
-        throw new AppError(`Số thứ tự ${index} đã tồn tại ở slogan khác`, 400)
-      }
-      
-      // Cập nhật index
-      const result = await db.query(
-        'UPDATE slogans SET index = $1 WHERE id = $2 RETURNING id, index, name',
-        [index, id]
-      )
-      
-      updatedItems.push(result.rows[0])
     }
-    
+
+    // Lấy danh sách ID để kiểm tra tồn tại
+    const ids = items.map(item => item.id)
+    const checkExist = await db.query(
+      'SELECT id FROM slogans WHERE id = ANY($1::int[])',
+      [ids]
+    )
+
+    if (checkExist.rows.length !== ids.length) {
+      const existingIds = checkExist.rows.map(row => row.id)
+      const notFoundIds = ids.filter(id => !existingIds.includes(id))
+      throw new AppError(
+        `Không tìm thấy slogan với ID: ${notFoundIds.join(', ')}`,
+        404
+      )
+    }
+
+    // Kiểm tra index không trùng nhau trong request
+    const indexes = items.map(item => item.index)
+    const uniqueIndexes = [...new Set(indexes)]
+    if (indexes.length !== uniqueIndexes.length) {
+      throw new AppError('Các index không được trùng nhau trong request', 400)
+    }
+
+    // Kiểm tra index không bị trùng với slogan khác ngoài danh sách đang cập nhật
+    const existingIndex = await db.query(
+      'SELECT index FROM slogans WHERE index = ANY($1::int[]) AND id != ALL($2::int[])',
+      [indexes, ids]
+    )
+
+    if (existingIndex.rows.length > 0) {
+      const duplicateIndexes = existingIndex.rows.map(row => row.index)
+      throw new AppError(
+        `Các index ${duplicateIndexes.join(', ')} đã tồn tại ở slogan khác`,
+        400
+      )
+    }
+
+    // Xây dựng câu query CASE WHEN để cập nhật tất cả cùng lúc
+    let caseWhen = ''
+    let params = []
+    let paramIndex = 1
+
+    items.forEach((item, i) => {
+      caseWhen += `WHEN id = $${paramIndex} THEN $${paramIndex + 1} `
+      params.push(item.id, item.index)
+      paramIndex += 2
+    })
+
+    const query = `
+      UPDATE slogans 
+      SET index = CASE 
+        ${caseWhen}
+        ELSE index 
+      END
+      WHERE id IN (${items.map((_, i) => `$${i * 2 + 1}`).join(', ')})
+      RETURNING id, index, name
+    `
+
+    const result = await db.query(query, params)
+
     return {
       success: true,
       message: 'Cập nhật số thứ tự thành công',
-      data: updatedItems
+      data: result.rows
     }
   } catch (error) {
     if (error instanceof AppError) {
       throw error
     }
-    
+
     console.error('Lỗi khi cập nhật index hàng loạt:', error)
     throw new AppError('Lỗi server khi cập nhật số thứ tự', 500)
   }
