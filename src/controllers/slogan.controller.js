@@ -57,6 +57,12 @@ const getByIdPrivate = async (req, res) => {
 }
 
 const create = async (req, res, next) => {
+  const profile = await userModel.findUserById(req.user.id)
+  const allowedRoles = [ROLES.ADMIN, ROLES.SELLER]
+
+  if (!allowedRoles.includes(profile.role_name)) {
+    throw new AppError('Không có quyền thực hiện hành động này', 403)
+  }
   try {
     const { name, description, type, index, active } = req.body
 

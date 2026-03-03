@@ -24,6 +24,9 @@ const agencyCategoryRoutes = require('./src/routers/agency-category.routes')
 const videoRoutes = require('./src/routers/video.routes')
 const contactRoutes = require('./src/routers/contact.routes')
 const sloganRoutes = require('./src/routers/slogan.routes')
+const configPageRoutes = require('./src/routers/config-page.routes')
+const contentPageRoutes = require('./src/routers/content-page.routes')
+
 const uploadRoutes = require('./src/routers/upload.routes')
 
 const app = express()
@@ -49,6 +52,8 @@ app.use('/api/agency-category', agencyCategoryRoutes)
 app.use('/api/video', videoRoutes)
 app.use('/api/contact', contactRoutes)
 app.use('/api/slogan', sloganRoutes)
+app.use('/api/config-page', configPageRoutes)
+app.use('/api/content-page', contentPageRoutes)
 
 app.use('/api/uploads', express.static('src/uploads'))
 app.use('/api/upload', uploadRoutes)
