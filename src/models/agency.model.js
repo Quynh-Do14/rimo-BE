@@ -51,7 +51,9 @@ const getAllAgency = async ({
 
   // Tạo câu WHERE
   const whereClause =
-    conditions.length > 0 ? ` WHERE ${conditions.join(' AND ')} AND a.active = true` : ''
+    conditions.length > 0
+      ? ` WHERE ${conditions.join(' AND ')} AND a.active = true`
+      : ''
 
   // Câu truy vấn chính - DISTINCT để tránh trùng lặp khi JOIN
   const dataQuery = `
@@ -230,7 +232,10 @@ const getAllAgencyPrivate = async ({
 
 const getAgencyById = async id => {
   // Lấy thông tin agency
-  const result = await db.query('SELECT * FROM agency WHERE id = $1 AND active = true', [id])
+  const result = await db.query(
+    'SELECT * FROM agency WHERE id = $1 AND active = true',
+    [id]
+  )
 
   // Lấy danh sách categories type của agency
   const agencyCategoriesType = await db.query(
@@ -266,6 +271,8 @@ const createAgency = async ({
   lat,
   long,
   phone_number,
+  phone_number_2,
+  phone_number_3,
   province,
   district,
   star_rate,
@@ -274,13 +281,15 @@ const createAgency = async ({
   image
 }) => {
   const result = await db.query(
-    'INSERT INTO agency(name, address, lat, long, phone_number,province, district, star_rate, active, image) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *',
+    'INSERT INTO agency(name, address, lat, long, phone_number, phone_number_2, phone_number_3 ,province, district, star_rate, active, image) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *',
     [
       name,
       address,
       lat,
       long,
       phone_number,
+      phone_number_2,
+      phone_number_3,
       province,
       district,
       star_rate,
@@ -310,6 +319,8 @@ const updateAgency = async (
     lat,
     long,
     phone_number,
+    phone_number_2,
+    phone_number_3,
     province,
     district,
     star_rate,
@@ -346,6 +357,14 @@ const updateAgency = async (
   if (phone_number !== undefined) {
     fields.push('phone_number')
     values.push(phone_number)
+  }
+  if (phone_number !== undefined) {
+    fields.push('phone_number_2')
+    values.push(phone_number_2)
+  }
+  if (phone_number !== undefined) {
+    fields.push('phone_number_3')
+    values.push(phone_number_3)
   }
 
   if (province !== undefined) {
