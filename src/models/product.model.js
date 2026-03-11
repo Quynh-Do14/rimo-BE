@@ -183,8 +183,6 @@ const getAllProductsPrivate = async ({
 
 const getProductById = async id => {
   // 1. Truy vấn thông tin sản phẩm chính
-  console.log('id', id)
-
   const productRes = await db.query(
     `
     SELECT p.*, c.name AS category_name, b.name AS brand_name
