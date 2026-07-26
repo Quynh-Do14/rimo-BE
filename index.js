@@ -26,6 +26,7 @@ const contactRoutes = require('./src/routers/contact.routes')
 const sloganRoutes = require('./src/routers/slogan.routes')
 const configPageRoutes = require('./src/routers/config-page.routes')
 const contentPageRoutes = require('./src/routers/content-page.routes')
+const seoProductRoutes = require('./src/routers/seo-product.routes')
 
 const uploadRoutes = require('./src/routers/upload.routes')
 
@@ -54,6 +55,7 @@ app.use('/api/contact', contactRoutes)
 app.use('/api/slogan', sloganRoutes)
 app.use('/api/config-page', configPageRoutes)
 app.use('/api/content-page', contentPageRoutes)
+app.use('/api/seo-product', seoProductRoutes)
 
 app.use('/api/uploads', express.static('src/uploads'))
 app.use('/api/upload', uploadRoutes)
