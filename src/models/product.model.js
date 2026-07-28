@@ -199,14 +199,14 @@ const getProductById = async id => {
 
   // 2. Lấy ảnh sản phẩm
   const imageRes = await db.query(
-    `SELECT image_url FROM product_images WHERE product_id = $1`,
+    `SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY id ASC`,
     [product.id]
   )
   product.images = imageRes.rows.map(r => r.image_url)
 
   // 3. Lấy danh sách thông số kỹ thuật (figures)
   const figureRes = await db.query(
-    `SELECT id, key, value FROM product_figures WHERE product_id = $1`,
+    `SELECT id, key, value FROM product_figures WHERE product_id = $1 ORDER BY id ASC`,
     [product.id]
   )
   product.productFigure = figureRes.rows
@@ -262,18 +262,18 @@ const getProductByIdPrivate = async id => {
 
   // 2. Lấy ảnh sản phẩm
   const imageRes = await db.query(
-    `SELECT image_url FROM product_images WHERE product_id = $1`,
+    `SELECT image_url FROM product_images WHERE product_id = $1 ORDER BY id ASC`,
     [id]
   )
   product.images = imageRes.rows.map(r => r.image_url)
 
   // 3. Lấy danh sách thông số kỹ thuật (figures)
   const figureRes = await db.query(
-    `SELECT id, key, value FROM product_figures WHERE product_id = $1`,
+    `SELECT id, key, value FROM product_figures WHERE product_id = $1 ORDER BY id ASC`,
     [id]
   )
   const productKeyword = await db.query(
-    `SELECT id, product_id, keyword FROM product_keyword WHERE product_id = $1 ORDER BY id DESC`,
+    `SELECT id, product_id, keyword FROM product_keyword WHERE product_id = $1 ORDER BY id ASC`,
     [id]
   )
   product.keyword = productKeyword.rows
