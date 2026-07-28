@@ -81,9 +81,9 @@ const getProductById = async id => {
       return null
     }
 
-    // Lấy keywords nếu có sản phẩm
+    // Lấy keywords nếu có sản phẩm - sort theo id giảm dần (mới nhất trước)
     const productKeyword = await db.query(
-      `SELECT id, seo_product_id, keyword FROM seo_product_keyword WHERE seo_product_id = $1`,
+      `SELECT id, seo_product_id, keyword FROM seo_product_keyword WHERE seo_product_id = $1 ORDER BY id DESC`,
       [productResult.id]
     )
     productResult.keyword = productKeyword.rows
@@ -108,9 +108,9 @@ const getProductByIdPrivate = async id => {
       return null
     }
 
-    // Lấy keywords
+    // Lấy keywords - sort theo id giảm dần (mới nhất trước)
     const productKeyword = await db.query(
-      `SELECT id, seo_product_id, keyword FROM seo_product_keyword WHERE seo_product_id = $1`,
+      `SELECT id, seo_product_id, keyword FROM seo_product_keyword WHERE seo_product_id = $1 ORDER BY id DESC`,
       [productResult.id]
     )
     productResult.keyword = productKeyword.rows
@@ -121,6 +121,7 @@ const getProductByIdPrivate = async id => {
     throw new AppError('Lỗi server khi lấy thông tin Bài viết', 500)
   }
 }
+
 const getProductBySlug = async slug => {
   try {
     const result = await db.query(
@@ -135,9 +136,9 @@ const getProductBySlug = async slug => {
       return null
     }
 
-    // Lấy keywords nếu có sản phẩm
+    // Lấy keywords nếu có sản phẩm - sort theo id giảm dần (mới nhất trước)
     const productKeyword = await db.query(
-      `SELECT id, seo_product_id, keyword FROM seo_product_keyword WHERE seo_product_id = $1`,
+      `SELECT id, seo_product_id, keyword FROM seo_product_keyword WHERE seo_product_id = $1 ORDER BY id DESC`,
       [productResult.id]
     )
     productResult.keyword = productKeyword.rows
